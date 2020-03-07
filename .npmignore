@@ -1,0 +1,8 @@
+# os
+.DS_Store
+Thumbs.db
+
+# lib
+/src
+/coverage
+*.log

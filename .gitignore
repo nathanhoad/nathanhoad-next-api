@@ -1,0 +1,9 @@
+# os
+.DS_Store
+Thumbs.db
+
+# lib
+node_modules
+/dist
+/coverage
+*.log
