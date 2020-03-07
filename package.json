@@ -1,6 +1,6 @@
 {
   "name": "@nathanhoad/next-api",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Some API helpers for Next.js",
   "main": "dist/index.js",
   "keywords": [
