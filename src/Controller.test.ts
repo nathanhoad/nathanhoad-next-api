@@ -1,3 +1,7 @@
+import fetch from "isomorphic-unfetch";
+import http from "http";
+import listen from "test-listen";
+
 import {
   Controller,
   UnauthorizedError,
@@ -35,76 +39,116 @@ describe("Contoller", () => {
     expect(controller.index()).resolves.toBe("test");
   });
 
-  it("can create a collection handler", async () => {
-    expect.hasAssertions();
+  describe("Collection handler", () => {
+    let controller;
 
-    class ThingsController extends Controller {
-      public async index() {
-        return { value: "index" };
+    beforeEach(() => {
+      class ThingsController extends Controller {
+        public async index() {
+          return { value: "index" };
+        }
+
+        public async create() {
+          return { value: "create" };
+        }
       }
 
-      public async create() {
-        return { value: "create" };
-      }
-    }
+      controller = new ThingsController();
+    });
 
-    const controller = new ThingsController();
-    const handler = controller.handleCollection();
+    it("handles GET", async () => {
+      expect.hasAssertions();
 
-    const { req: req1, res: res1, response: r1 } = createMinmumRequestParams("GET");
-    await handler(req1, res1);
-    expect(r1.body.value).toBe("index");
+      const { status, body } = await getResponse("GET", controller.handleCollection());
 
-    const { req: req2, res: res2, response: r2 } = createMinmumRequestParams("POST");
-    await handler(req2, res2);
-    expect(r2.body.value).toBe("create");
+      expect(status).toBe(200);
+      expect(body.value).toBe("index");
+    });
 
-    const { req: req3, res: res3, response: r3 } = createMinmumRequestParams("BAD");
-    await handler(req3, res3);
-    expect(r3.status).toBe(400);
-    expect(r3.body.message).toContain("There was a problem");
+    it("handles POST", async () => {
+      expect.hasAssertions();
+
+      const { status, body } = await getResponse("POST", controller.handleCollection());
+
+      expect(status).toBe(200);
+      expect(body.value).toBe("create");
+    });
+
+    it("handles bad requests", async () => {
+      expect.hasAssertions();
+
+      const { status, body } = await getResponse("DELETE", controller.handleCollection());
+
+      expect(status).toBe(400);
+      expect(body.message).toContain("There was a problem");
+    });
   });
 
-  it("can create an item handler", async () => {
-    expect.hasAssertions();
+  describe("Item handler", () => {
+    let controller;
 
-    class ThingsController extends Controller {
-      public async read() {
-        return { value: "read" };
+    beforeEach(() => {
+      class ThingsController extends Controller {
+        public async read() {
+          return { value: "read" };
+        }
+
+        public async update() {
+          return { value: "update" };
+        }
+
+        public async destroy() {
+          return { value: "destroy" };
+        }
       }
 
-      public async update() {
-        return { value: "update" };
-      }
+      controller = new ThingsController();
+    });
 
-      public async destroy() {
-        return { value: "destroy" };
-      }
-    }
+    it("handles GET", async () => {
+      expect.hasAssertions();
 
-    const controller = new ThingsController();
-    const handler = controller.handleItem();
+      const { status, body } = await getResponse("GET", controller.handleItem());
 
-    const { req: req1, res: res1, response: r1 } = createMinmumRequestParams("GET");
-    await handler(req1, res1);
-    expect(r1.body.value).toBe("read");
+      expect(status).toBe(200);
+      expect(body.value).toBe("read");
+    });
 
-    const { req: req2, res: res2, response: r2 } = createMinmumRequestParams("PUT");
-    await handler(req2, res2);
-    expect(r2.body.value).toBe("update");
+    it("handles PUT", async () => {
+      expect.hasAssertions();
 
-    const { req: req3, res: res3, response: r3 } = createMinmumRequestParams("PATCH");
-    await handler(req3, res3);
-    expect(r3.body.value).toBe("update");
+      const { status, body } = await getResponse("PUT", controller.handleItem());
 
-    const { req: req4, res: res4, response: r4 } = createMinmumRequestParams("DELETE");
-    await handler(req4, res4);
-    expect(r4.body.value).toBe("destroy");
+      expect(status).toBe(200);
+      expect(body.value).toBe("update");
+    });
 
-    const { req: req5, res: res5, response: r5 } = createMinmumRequestParams("BAD");
-    await handler(req5, res5);
-    expect(r5.status).toBe(400);
-    expect(r5.body.message).toContain("There was a problem");
+    it("handles POST", async () => {
+      expect.hasAssertions();
+
+      const { status, body } = await getResponse("POST", controller.handleItem());
+
+      expect(status).toBe(200);
+      expect(body.value).toBe("update");
+    });
+
+    it("handles PATCH", async () => {
+      expect.hasAssertions();
+
+      const { status, body } = await getResponse("PATCH", controller.handleItem());
+
+      expect(status).toBe(200);
+      expect(body.value).toBe("update");
+    });
+
+    it("handles DELETE", async () => {
+      expect.hasAssertions();
+
+      const { status, body } = await getResponse("DELETE", controller.handleItem());
+
+      expect(status).toBe(200);
+      expect(body.value).toBe("destroy");
+    });
   });
 
   it("can handle unauthorised errors", async () => {
@@ -117,12 +161,11 @@ describe("Contoller", () => {
     }
 
     const controller = new ThingsController();
-    const handler = controller.handleItem();
 
-    const { req: req1, res: res1, response: r1 } = createMinmumRequestParams("GET");
-    await handler(req1, res1);
-    expect(r1.status).toBe(401);
-    expect(r1.body.message).toContain("not authorized");
+    const { status, body } = await getResponse("GET", controller.handleItem());
+
+    expect(status).toBe(401);
+    expect(body.message).toContain("not authorized");
   });
 
   it("can handle not found errors", async () => {
@@ -135,12 +178,11 @@ describe("Contoller", () => {
     }
 
     const controller = new ThingsController();
-    const handler = controller.handleItem();
 
-    const { req: req1, res: res1, response: r1 } = createMinmumRequestParams("GET");
-    await handler(req1, res1);
-    expect(r1.status).toBe(404);
-    expect(r1.body.message).toContain("could not be found");
+    const { status, body } = await getResponse("GET", controller.handleItem());
+
+    expect(status).toBe(404);
+    expect(body.message).toContain("not be found");
   });
 
   it("can handle unprocessable entity errors", async () => {
@@ -153,12 +195,11 @@ describe("Contoller", () => {
     }
 
     const controller = new ThingsController();
-    const handler = controller.handleItem();
 
-    const { req: req1, res: res1, response: r1 } = createMinmumRequestParams("PUT");
-    await handler(req1, res1);
-    expect(r1.status).toBe(422);
-    expect(r1.body.message).toContain("could not be completed");
+    const { status, body } = await getResponse("PUT", controller.handleItem());
+
+    expect(status).toBe(422);
+    expect(body.message).toContain("could not be completed");
   });
 
   it("can handle internal server errors", async () => {
@@ -171,12 +212,11 @@ describe("Contoller", () => {
     }
 
     const controller = new ThingsController();
-    const handler = controller.handleItem();
 
-    const { req: req1, res: res1, response: r1 } = createMinmumRequestParams("PUT");
-    await handler(req1, res1);
-    expect(r1.status).toBe(500);
-    expect(r1.body.message).toContain("server error");
+    const { status, body } = await getResponse("PUT", controller.handleItem());
+
+    expect(status).toBe(500);
+    expect(body.message).toContain("server error");
   });
 
   it("can handle unknown errors", async () => {
@@ -194,40 +234,51 @@ describe("Contoller", () => {
 
     const controller = new ThingsController();
 
-    const collections = controller.handleCollection();
-    const { req: req1, res: res1, response: r1 } = createMinmumRequestParams("GET");
-    await collections(req1, res1);
-    expect(r1.status).toBe(500);
-    expect(r1.body.message).toContain("Unknown error");
+    const collection = await getResponse("GET", controller.handleCollection());
+    expect(collection.status).toBe(500);
+    expect(collection.body.message).toContain("Unknown error");
 
-    const items = controller.handleItem();
-    const { req: req2, res: res2, response: r2 } = createMinmumRequestParams("GET");
-    await items(req2, res2);
-    expect(r2.status).toBe(500);
-    expect(r2.body.message).toContain("Unknown error");
+    const item = await getResponse("GET", controller.handleItem());
+    expect(item.status).toBe(500);
+    expect(item.body.message).toContain("Unknown error");
+  });
+
+  it("can handle CORS requests", async () => {
+    expect.hasAssertions();
+
+    class ThingsController extends Controller {}
+
+    const controller = new ThingsController();
+
+    const collection = await getResponse("OPTIONS", controller.handleCollection());
+    expect(collection.status).toBe(200);
+    expect(collection.body).toBeNull();
+
+    const item = await getResponse("OPTIONS", controller.handleItem());
+    expect(item.status).toBe(200);
+    expect(item.body).toBeNull();
   });
 });
 
-function createMinmumRequestParams(method: string = "GET") {
-  const req: any = {
-    method
-  };
+/**
+ * Run a tiny server for testing an endpoint
+ * @param method
+ * @param handler
+ */
+async function getResponse(method: string, handler: (req, res) => void) {
+  const service = new http.Server(handler);
 
-  const response = { status: 200, body: null };
-  const res: any = {
-    status(status: number) {
-      response.status = status;
-      return {
-        json(json: any) {
-          response.body = json;
-        }
-      };
-    }
-  };
+  const url = await listen(service);
+  const result = await fetch(url, { method });
 
-  return {
-    req,
-    res,
-    response
-  };
+  const status = result.status;
+
+  let body = null;
+  try {
+    body = await result.json();
+  } catch (err) {}
+
+  service.close();
+
+  return { status, body };
 }

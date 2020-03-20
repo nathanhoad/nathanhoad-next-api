@@ -1,5 +1,21 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { send } from "micro";
+import cors from "micro-cors";
+import helmet from "micro-helmet";
 
+type Handler = (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
+
+/**
+ * Wrap a handler with some security headers
+ * @param handler
+ */
+function createHandler(handler: Handler): Handler {
+  return helmet(cors()(handler));
+}
+
+/**
+ * A CRUD based controller for generating request handlers
+ */
 export class Controller {
   public async index(query?: any): Promise<any> {
     throw new NotFoundError();
@@ -24,11 +40,14 @@ export class Controller {
   /**
    * Create an index endpoint handler
    */
-  public handleCollection() {
-    return async (req: NextApiRequest, res: NextApiResponse) => {
+  public handleCollection(): Handler {
+    async function handler(req: NextApiRequest, res: NextApiResponse) {
       try {
         let json;
-        switch (req.method) {
+        switch (req.method.toUpperCase()) {
+          case "OPTIONS":
+            return send(res, 200);
+
           case "GET":
             json = await this.index(req.query);
             break;
@@ -41,25 +60,31 @@ export class Controller {
             throw new BadRequestError();
         }
 
-        res.status(200).json(json);
+        send(res, 200, json);
       } catch (err) {
-        res.status(err.status || 500).json({ statusCode: err.status || 500, message: err.message || "Unknown error" });
+        send(res, err.status || 500, { statusCode: err.status || 500, message: err.message || "Unknown error" });
       }
-    };
+    }
+
+    return createHandler(handler.bind(this));
   }
 
   /**
    * Create a single item endpoint handler
    */
-  public handleItem() {
-    return async (req: NextApiRequest, res: NextApiResponse) => {
+  public handleItem(): Handler {
+    async function handler(req: NextApiRequest, res: NextApiResponse) {
       try {
         let json;
-        switch (req.method) {
+        switch (req.method.toUpperCase()) {
+          case "OPTIONS":
+            return send(res, 200);
+
           case "GET":
             json = await this.read(req.query);
             break;
 
+          case "POST":
           case "PUT":
           case "PATCH":
             json = await this.update(req.query, req.body);
@@ -72,11 +97,14 @@ export class Controller {
           default:
             throw new BadRequestError();
         }
-        res.status(200).json(json);
+
+        send(res, 200, json);
       } catch (err) {
-        res.status(err.status || 500).json({ statusCode: err.status || 500, message: err.message || "Unknown error" });
+        send(res, err.status || 500, { statusCode: err.status || 500, message: err.message || "Unknown error" });
       }
-    };
+    }
+
+    return createHandler(handler.bind(this));
   }
 }
 
