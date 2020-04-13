@@ -58,16 +58,12 @@ describe("when given config", () => {
   it("accepts an empty success response", async () => {
     expect.hasAssertions();
 
-    nock("http://localhost:5000/api")
-      .get("/things")
-      .reply(204);
+    nock("http://localhost:5000/api").get("/things").reply(204);
 
     const things = await read("http://localhost:5000/api/things");
     expect(things).toBeNull();
 
-    nock("http://localhost:5000/api")
-      .get("/things")
-      .reply(204, null);
+    nock("http://localhost:5000/api").get("/things").reply(204, null);
 
     const things2 = await read("http://localhost:5000/api/things");
     expect(things2).toBeNull();
@@ -86,9 +82,7 @@ describe("when given config", () => {
   it("passes on unknown API errors", async () => {
     expect.hasAssertions();
 
-    nock("http://localhost:5000/api")
-      .get("/things")
-      .reply(500, null);
+    nock("http://localhost:5000/api").get("/things").reply(500, null);
 
     await expect(read("/things")).rejects.toThrow("An unknown error occured");
   });
@@ -122,18 +116,14 @@ describe("when given config", () => {
 
   it("can revoke the session", async () => {
     setSessionToken("test");
-    nock("http://localhost:5000/api")
-      .get("/things")
-      .reply(401, { message: "Invalid session" });
+    nock("http://localhost:5000/api").get("/things").reply(401, { message: "Invalid session" });
 
     await expect(read("/things")).rejects.toThrow();
 
     expect(getSessionToken()).toBe(null);
 
     setSessionToken("test");
-    nock("http://localhost:5000/api")
-      .get("/things")
-      .reply(401, { message: "Invalid token format" });
+    nock("http://localhost:5000/api").get("/things").reply(401, { message: "Invalid token format" });
 
     await expect(read("/things")).rejects.toThrow();
 
@@ -144,9 +134,7 @@ describe("when given config", () => {
     it("will post a payload to an endpoint", async () => {
       expect.hasAssertions();
 
-      nock("http://localhost:5000/api")
-        .post("/things")
-        .reply(201, { name: "first" });
+      nock("http://localhost:5000/api").post("/things").reply(201, { name: "first" });
 
       const thing = await create("/things", { name: "first" });
 
@@ -173,9 +161,7 @@ describe("when given config", () => {
     it("will update data on an endpoint", async () => {
       expect.hasAssertions();
 
-      nock("http://localhost:5000/api")
-        .put("/things")
-        .reply(200, { name: "Updated" });
+      nock("http://localhost:5000/api").put("/things").reply(200, { name: "Updated" });
 
       const thing = await update("/things");
 
@@ -187,9 +173,7 @@ describe("when given config", () => {
     it("will delete data on an endpoint", async () => {
       expect.hasAssertions();
 
-      nock("http://localhost:5000/api")
-        .delete("/things")
-        .reply(200, { name: "Deleted" });
+      nock("http://localhost:5000/api").delete("/things").reply(200, { name: "Deleted" });
 
       const thing = await destroy("/things");
 

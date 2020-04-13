@@ -43,24 +43,29 @@ export class Controller {
   public handleCollection(): Handler {
     async function handler(req: NextApiRequest, res: NextApiResponse) {
       try {
-        let json;
+        let body;
         switch (req.method.toUpperCase()) {
           case "OPTIONS":
             return send(res, 200);
 
           case "GET":
-            json = await this.index(req.query);
+            body = await this.index(req.query);
             break;
 
           case "POST":
-            json = await this.create(req.body);
+            body = await this.create(req.body);
             break;
 
           default:
             throw new BadRequestError();
         }
 
-        send(res, 200, json);
+        // Try to guess content type
+        if (typeof body === "string" && (body as string).startsWith("<?xml")) {
+          res.setHeader("content-type", "application/xml");
+        }
+
+        send(res, 200, body);
       } catch (err) {
         send(res, err.status || 500, { statusCode: err.status || 500, message: err.message || "Unknown error" });
       }
@@ -75,30 +80,36 @@ export class Controller {
   public handleItem(): Handler {
     async function handler(req: NextApiRequest, res: NextApiResponse) {
       try {
-        let json;
+        let body;
         switch (req.method.toUpperCase()) {
           case "OPTIONS":
             return send(res, 200);
 
           case "GET":
-            json = await this.read(req.query);
+            body = await this.read(req.query);
             break;
 
           case "POST":
           case "PUT":
           case "PATCH":
-            json = await this.update(req.query, req.body);
+            body = await this.update(req.query, req.body);
             break;
 
           case "DELETE":
-            json = await this.destroy(req.query);
+            body = await this.destroy(req.query);
             break;
 
           default:
+            /* istanbul ignore next */
             throw new BadRequestError();
         }
 
-        send(res, 200, json);
+        // Try to guess content type
+        if (typeof body === "string" && (body as string).startsWith("<?xml")) {
+          res.setHeader("content-type", "application/xml");
+        }
+
+        send(res, 200, body);
       } catch (err) {
         send(res, err.status || 500, { statusCode: err.status || 500, message: err.message || "Unknown error" });
       }
