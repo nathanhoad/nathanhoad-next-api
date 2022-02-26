@@ -29,6 +29,23 @@ describe("when given config", () => {
         SESSION_NAME: "test"
       }
     };
+
+    let _storage: Record<string, string> = {}
+    const localStorageMock = {
+      getItem(key: string): string {
+        return _storage[key];
+      },
+      setItem(key: string, value: string): void {
+        _storage[key] = value;
+      },
+      removeItem(key: string): void {
+        delete _storage[key];
+      },
+      clear() {
+        _storage = {};
+      }
+    };
+    global["localStorage"] = localStorageMock;
   });
 
   it("can take use the URL in config", async () => {
@@ -190,8 +207,16 @@ describe("when not given config", () => {
   it("can guess the URL from the document", async () => {
     expect.hasAssertions();
 
-    nock("http://localhost:3000/api")
-      .get("/things")
+    global["document"] = {
+      location: {
+        protocol: "http://",
+        hostname: "localhost",
+        port: 3000
+      }
+    };
+
+    nock("http://localhost:3000")
+      .get("/api/things")
       .reply(200, [{ name: "first" }, { name: "second" }]);
 
     const things = await read("/things");
